@@ -1,14 +1,14 @@
 (() => {
 "use strict";
 /* ============================================================
-   Monopoly Deal Table — rules engine + interactive tabletop
-   Rules follow the official 2008 Hasbro rulebook (106 playing cards).
+   Set & Steal: rules engine and interactive tabletop.
+   106 playing cards; 3 plays a turn; first to 3 complete sets wins.
    ============================================================ */
 const $ = (id) => document.getElementById(id);
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const STATE_VERSION = 3;
-// Where the online-room API lives. Empty = same site. The GitHub Pages copy points this at the Hatchable server (see config.js).
-const API = String(window.DEAL_TABLE_API || "").replace(/\/+$/, "");
+// Where the online-room API lives. Empty means this same site; config.js can point it elsewhere (for example from GitHub Pages).
+const API = String(window.SET_AND_STEAL_API || "").replace(/\/+$/, "");
 
 const COLORS = {
   brown:     { name: "Brown",      hex: "#8a5a3b", ink: "#fff", need: 2, rent: [1, 2],       value: 1 },
@@ -19,21 +19,21 @@ const COLORS = {
   yellow:    { name: "Yellow",     hex: "#f4d03a", ink: "#3a2f00", need: 3, rent: [2, 4, 6], value: 3 },
   green:     { name: "Green",      hex: "#2f9b58", ink: "#fff", need: 3, rent: [2, 4, 7],    value: 4 },
   darkblue:  { name: "Dark Blue",  hex: "#2c4b9a", ink: "#fff", need: 2, rent: [3, 8],       value: 4 },
-  railroad:  { name: "Railroad",   hex: "#2b2b2b", ink: "#fff", need: 4, rent: [1, 2, 3, 4], value: 2, noBuild: true },
-  utility:   { name: "Utility",    hex: "#bccaa6", ink: "#253018", need: 2, rent: [1, 2],    value: 2, noBuild: true },
+  railroad:  { name: "Transit",    hex: "#2b2b2b", ink: "#fff", need: 4, rent: [1, 2, 3, 4], value: 2, noBuild: true },
+  utility:   { name: "Power",      hex: "#bccaa6", ink: "#253018", need: 2, rent: [1, 2],    value: 2, noBuild: true },
 };
 const ORDER = Object.keys(COLORS);
 const ACTIONS = {
-  passgo:   { name: "Pass Go",          value: 1, icon: "↻", text: "Draw 2 extra cards." },
-  debt:     { name: "Debt Collector",   value: 3, icon: "$", text: "Force any one player to pay you 5M." },
-  birthday: { name: "It's My Birthday", value: 2, icon: "✿", text: "All other players pay you 2M." },
-  no:       { name: "Just Say No",      value: 4, icon: "✋", text: "Cancel an action played against you. Use it any time — it doesn't use a play." },
-  breaker:  { name: "Deal Breaker",     value: 5, icon: "⚡", text: "Steal a complete set (including any buildings) from any player." },
-  forced:   { name: "Forced Deal",      value: 3, icon: "⇄", text: "Swap any one of your properties for another player's property that isn't part of a full set." },
-  sly:      { name: "Sly Deal",         value: 3, icon: "☞", text: "Steal one property from any player. It cannot be part of a full set." },
-  double:   { name: "Double The Rent",  value: 1, icon: "×2", text: "Play together with a Rent card to double it. Counts as one of your 3 plays." },
-  house:    { name: "House",            value: 3, icon: "⌂", text: "Add to a full set you own (not Railroads/Utilities). +3M rent." },
-  hotel:    { name: "Hotel",            value: 4, icon: "▣", text: "Add to a full set that already has a House. +4M rent." },
+  passgo:   { name: "Payday",       value: 1, icon: "↻", text: "Draw 2 extra cards." },
+  debt:     { name: "Collections",  value: 3, icon: "$", text: "Make any one player pay you 5 coins." },
+  birthday: { name: "Housewarming", value: 2, icon: "✿", text: "Every other player pays you 2 coins." },
+  no:       { name: "Nope!",        value: 4, icon: "✋", text: "Cancel an action played against you. Use it any time; it doesn't use a play." },
+  breaker:  { name: "Takeover",     value: 5, icon: "⚡", text: "Take a complete set, with any buildings, from any player." },
+  forced:   { name: "Swap",         value: 3, icon: "⇄", text: "Swap one of your properties for another player's property that isn't part of a full set." },
+  sly:      { name: "Steal",        value: 3, icon: "☞", text: "Take one property from any player. It can't be part of a full set." },
+  double:   { name: "Rent Hike",    value: 1, icon: "×2", text: "Play with a Rent card to double it. Counts as one of your 3 plays." },
+  house:    { name: "House",        value: 3, icon: "⌂", text: "Add to a full set you own (not Transit or Power). +3 coins rent." },
+  hotel:    { name: "Tower",        value: 4, icon: "▣", text: "Add to a full set that already has a House. +4 coins rent." },
 };
 const AVATAR_COLORS = ["#f2b544", "#5bc0be", "#ef6f6c", "#a594f9", "#7bc67e"];
 
@@ -42,6 +42,10 @@ let seq = 0;
 const newId = () => Math.random().toString(36).slice(2, 8) + (seq++).toString(36);
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 const sum = (arr) => arr.reduce((s, c) => s + (c.value || 0), 0);
+// Money is counted in coins. Each denomination has its own colour; other amounts use a plain gold coin.
+const DENOMS = [1, 2, 3, 4, 5, 10];
+const coins = (n) => n + (n === 1 ? " coin" : " coins");
+const coin = (n, cls = "") => '<span class="coin c' + (DENOMS.includes(n) ? n : "x") + (cls ? " " + cls : "") + '">' + n + "</span>";
 
 function buildDeck() {
   const d = [];
@@ -68,7 +72,7 @@ function cardName(c) {
   if (c.type === "wild") return c.any ? "Wild (any colour)" : c.colors.map((k) => COLORS[k].name).join(" / ") + " Wild";
   if (c.type === "rent") return c.any ? "Wild Rent" : "Rent · " + c.colors.map((k) => COLORS[k].name).join(" / ");
   if (c.type === "action") return ACTIONS[c.effect].name;
-  return c.value + "M";
+  return coins(c.value);
 }
 
 /* ---------------- game state ---------------- */
@@ -87,7 +91,7 @@ function newGame(names) {
   const players = names.map(newPlayer);
   players.forEach((p) => { for (let i = 0; i < 5; i++) p.hand.push(deck.pop()); });
   game = { v: STATE_VERSION, id: newId(), players, deck, discard: [], current: 0, plays: 3, turnNo: 0, turnStarted: Date.now(), pending: null, winner: null, log: [], drew: 0 };
-  log("New game — " + names.join(", ") + ".");
+  log("New game: " + names.join(", ") + ".");
   beginTurn();
 }
 
@@ -109,7 +113,7 @@ function beginTurn() {
   game.plays = 3; game.turnNo++; game.turnStarted = Date.now(); game.pending = null;
   const n = p.hand.length === 0 ? 5 : 2;
   game.drew = drawCards(p, n);
-  log(p.name + "'s turn — drew " + game.drew + ".");
+  log(p.name + "'s turn. Drew " + game.drew + ".");
   checkWin();
 }
 
@@ -176,7 +180,7 @@ function playProperty(cardId, color) {
 }
 function bankCard(cardId) {
   const p = cur(), c = takeFromHand(p, cardId); if (!c) return;
-  p.bank.push(c); usePlay(); log(p.name + " banked " + cardName(c) + " (" + c.value + "M).");
+  p.bank.push(c); usePlay(); log(p.name + " banked " + (c.type === "money" ? coins(c.value) : cardName(c) + " as " + coins(c.value)) + ".");
 }
 function recolorWild(cardId, color) {
   const p = cur(), c = p.props.find((x) => x.id === cardId); if (!c || c.type !== "wild" || c.color === color) return;
@@ -186,7 +190,7 @@ function recolorWild(cardId, color) {
 }
 function playPassGo(cardId) {
   const p = cur(), c = takeFromHand(p, cardId); if (!c) return;
-  game.discard.push(c); usePlay(); const n = drawCards(p, 2); log(p.name + " played Pass Go and drew " + n + ".");
+  game.discard.push(c); usePlay(); const n = drawCards(p, 2); log(p.name + " played Payday and drew " + n + ".");
 }
 function playBuilding(cardId, color) {
   const p = cur(), c = takeFromHand(p, cardId); if (!c) return;
@@ -204,7 +208,7 @@ function endTurn() {
   beginTurn();
 }
 
-/* ---------------- action resolution (with Just Say No chain) ---------------- */
+/* ---------------- action resolution (with Nope! chains) ---------------- */
 const STEAL = ["sly", "forced", "breaker"];
 function launchAction(spec) {
   const p = cur(), c = takeFromHand(p, spec.cardId); if (!c) return;
@@ -221,12 +225,12 @@ function launchAction(spec) {
 function describeLaunch(pd) {
   const t = pd.targets.map((id) => P(id).name).join(", ");
   switch (pd.kind) {
-    case "sly": return "Sly Deal on " + t + "'s " + cardName(findProp(pd.targets[0], pd.takeId));
-    case "forced": return "Forced Deal with " + t;
-    case "breaker": return "Deal Breaker on " + t + "'s " + COLORS[pd.stackColor].name + " set";
-    case "rent": return pd.label + " (" + COLORS[pd.color].name + ", " + pd.amount + "M" + (pd.doubles ? ", doubled" : "") + ") against " + t;
-    case "debt": return "Debt Collector on " + t + " (5M)";
-    case "birthday": return "It's My Birthday (2M from everyone)";
+    case "sly": return "Steal on " + t + "'s " + cardName(findProp(pd.targets[0], pd.takeId));
+    case "forced": return "Swap with " + t;
+    case "breaker": return "Takeover on " + t + "'s " + COLORS[pd.stackColor].name + " set";
+    case "rent": return pd.label + " (" + COLORS[pd.color].name + ", " + coins(pd.amount) + (pd.doubles ? ", doubled" : "") + ") against " + t;
+    case "debt": return "Collections on " + t + " (5 coins)";
+    case "birthday": return "Housewarming (2 coins from everyone)";
   }
   return pd.label;
 }
@@ -263,16 +267,16 @@ function acceptCurrent() {
 }
 function blockCurrent() {
   const pd = game.pending, target = P(pd.targets[pd.ti]);
-  pd.results.push(target.name + " blocked it"); log("✋ " + target.name + "'s Just Say No stands — " + pd.label + " is cancelled for them.");
+  pd.results.push(target.name + " blocked it"); log("✋ " + target.name + "'s Nope! stands, so " + pd.label + " is cancelled for them.");
   nextTarget();
 }
 function respondNo() {
   const pd = game.pending, who = P(responderId()); if (!pd || !who) return;
   const card = who.hand.find((c) => c.type === "action" && c.effect === "no"); if (!card) return;
   takeFromHand(who, card.id); game.discard.push(card); pd.chain++;
-  if (pd.stage === "respond") { pd.stage = "counter"; log("✋ " + who.name + " played Just Say No!"); }
-  else { pd.stage = "respond"; log("✋ " + who.name + " countered with Just Say No!"); }
-  flash("JUST SAY NO!", who.name + (pd.chain > 1 ? " counters" : " blocks") + " the " + pd.label, "no");
+  if (pd.stage === "respond") { pd.stage = "counter"; log("✋ " + who.name + " played Nope!"); }
+  else { pd.stage = "respond"; log("✋ " + who.name + " countered with Nope!"); }
+  flash("NOPE!", who.name + (pd.chain > 1 ? " counters" : " blocks") + " the " + pd.label, "no");
   advance();
 }
 function respondAccept() {
@@ -294,21 +298,21 @@ function transferPayment(payer, receiver, ids) {
     else { const b = payer.builds[a.color]; if (b) b[a.slot] = null; receiver.bank.push(a.card); }
   });
   normalize(payer); normalize(receiver);
-  const pd = game.pending; if (pd) pd.results.push(payer.name + " paid " + paid + "M");
-  log(payer.name + " paid " + receiver.name + " " + paid + "M (" + assets.map((a) => cardName(a.card)).join(", ") + ").");
+  const pd = game.pending; if (pd) pd.results.push(payer.name + " paid " + coins(paid));
+  log(payer.name + " paid " + receiver.name + " " + coins(paid) + " (" + assets.map((a) => cardName(a.card)).join(", ") + ").");
 }
 function executeSteal(pd, from, target) {
   if (pd.kind === "sly") {
     const c = target.props.find((x) => x.id === pd.takeId); if (!c) return;
     target.props = target.props.filter((x) => x.id !== c.id); from.props.push(c);
     pd.results.push(from.name + " took " + cardName(c)); log("☞ " + from.name + " stole " + target.name + "'s " + cardName(c) + ".");
-    flash("SLY DEAL!", from.name + " took " + target.name + "'s " + cardName(c), "steal");
+    flash("STEAL!", from.name + " took " + target.name + "'s " + cardName(c), "steal");
   } else if (pd.kind === "forced") {
     const take = target.props.find((x) => x.id === pd.takeId), give = from.props.find((x) => x.id === pd.giveId); if (!take || !give) return;
     target.props = target.props.filter((x) => x.id !== take.id); from.props = from.props.filter((x) => x.id !== give.id);
     from.props.push(take); target.props.push(give);
     pd.results.push("swapped"); log("⇄ " + from.name + " swapped their " + cardName(give) + " for " + target.name + "'s " + cardName(take) + ".");
-    flash("FORCED DEAL!", cardName(give) + " ⇄ " + cardName(take), "steal");
+    flash("SWAP!", cardName(give) + " ⇄ " + cardName(take), "steal");
   } else if (pd.kind === "breaker") {
     const stack = stacksFor(target, pd.stackColor).find((s) => s.complete); if (!stack) return;
     const ids = stack.cards.map((c) => c.id);
@@ -320,8 +324,8 @@ function executeSteal(pd, from, target) {
       delete target.builds[pd.stackColor];
     }
     normalize(target); normalize(from);
-    pd.results.push(from.name + " took the set"); log("⚡ " + from.name + " broke " + target.name + "'s " + COLORS[pd.stackColor].name + " set!");
-    flash("DEAL BREAKER!", from.name + " takes the " + COLORS[pd.stackColor].name + " set", "steal");
+    pd.results.push(from.name + " took the set"); log("⚡ " + from.name + " took over " + target.name + "'s " + COLORS[pd.stackColor].name + " set!");
+    flash("TAKEOVER!", from.name + " takes the " + COLORS[pd.stackColor].name + " set", "steal");
   }
 }
 function finishPending() { game.pending = null; checkWin(); }
@@ -339,12 +343,12 @@ function doublesInHand(p) { return p.hand.filter((c) => c.type === "action" && c
 /* ---------------- UI: card faces ---------------- */
 function cardFace(c, extra = "") {
   if (!c) return "";
-  const v = '<span class="cv">' + c.value + "M</span>";
+  const v = coin(c.value, "cv");
   if (c.type === "property") {
     const k = COLORS[c.color];
     return '<div class="card prop ' + extra + '" style="--c:' + k.hex + ";--bi:" + k.ink + '">' + v +
       '<div class="band">' + esc(k.name) + "</div>" +
-      '<ol class="ladder">' + k.rent.map((r, i) => "<li><i>" + (i + 1) + "</i><b>" + r + "M</b></li>").join("") + "</ol>" +
+      '<ol class="ladder">' + k.rent.map((r, i) => "<li><i>" + (i + 1) + "</i><b>" + r + '<span class="cn"></span></b></li>').join("") + "</ol>" +
       '<div class="need">' + k.need + " for a set</div></div>";
   }
   if (c.type === "wild") {
@@ -352,10 +356,10 @@ function cardFace(c, extra = "") {
     const bg = c.any ? "conic-gradient(from 200deg,#df3a35,#f08a24,#f4d03a,#2f9b58,#9ad7f2,#2c4b9a,#d6488c,#df3a35)" :
       "linear-gradient(115deg," + COLORS[c.colors[0]].hex + " 0 50%," + COLORS[c.colors[1]].hex + " 50% 100%)";
     const label = placed ? placed.name : (c.any ? "Any colour" : c.colors.map((k) => COLORS[k].name).join(" / "));
-    return '<div class="card wild ' + extra + '" style="--bg:' + bg + (placed ? ";--c:" + placed.hex + ";--bi:" + placed.ink : "") + '">' + (c.value ? v : '<span class="cv none">—</span>') +
+    return '<div class="card wild ' + extra + '" style="--bg:' + bg + (placed ? ";--c:" + placed.hex + ";--bi:" + placed.ink : "") + '">' + (c.value ? v : '<span class="coin cv none">0</span>') +
       '<div class="band ' + (placed ? "placed" : "") + '"><span>' + esc(label) + "</span></div>" +
       '<div class="wild-mark">WILD</div>' +
-      (placed && !c.any ? '<ol class="ladder">' + placed.rent.map((r, i) => "<li><i>" + (i + 1) + "</i><b>" + r + "M</b></li>").join("") + "</ol>" : '<div class="wild-sub">' + (c.any ? "No cash value" : "Flip on your turn") + "</div>") + "</div>";
+      (placed && !c.any ? '<ol class="ladder">' + placed.rent.map((r, i) => "<li><i>" + (i + 1) + "</i><b>" + r + '<span class="cn"></span></b></li>').join("") + "</ol>" : '<div class="wild-sub">' + (c.any ? "No cash value" : "Flip on your turn") + "</div>") + "</div>";
   }
   if (c.type === "rent") {
     const bg = c.any ? "conic-gradient(#df3a35,#f08a24,#f4d03a,#2f9b58,#9ad7f2,#2c4b9a,#d6488c,#8a5a3b,#df3a35)" :
@@ -368,7 +372,7 @@ function cardFace(c, extra = "") {
     return '<div class="card action fx-' + c.effect + " " + extra + '">' + v + '<div class="disc"><span>' + a.icon + "</span></div>" +
       '<div class="ctitle">' + esc(a.name) + '</div><div class="csub">' + esc(a.text) + "</div></div>";
   }
-  return '<div class="card money m' + c.value + " " + extra + '">' + v + '<div class="big">' + c.value + '<small>M</small></div><div class="csub">Money</div></div>';
+  return '<div class="card money m' + c.value + " " + extra + '">' + coin(c.value, "big") + '<div class="csub">' + (c.value === 1 ? "Coin" : "Coins") + "</div></div>";
 }
 function cardBack(n) { return '<span class="backs" title="' + n + ' cards in hand">' + '<i></i>'.repeat(Math.min(n, 7)) + "<b>" + n + "</b></span>"; }
 
@@ -448,6 +452,14 @@ function maybeAutoEnd() {
 }
 function syncDock() { const d = $("dock"); if (d) document.documentElement.style.setProperty("--dock-h", d.offsetHeight + "px"); }
 window.addEventListener("resize", syncDock);
+// Overlays sit below the top bar, whose height changes with notches, the installed app and wrapping buttons.
+// On phones the chat is sized to the visible area, so the on-screen keyboard never covers it.
+const rootStyle = document.documentElement.style, topbar = document.querySelector(".topbar");
+function syncTop() { rootStyle.setProperty("--top-h", topbar.offsetHeight + "px"); }
+function syncViewport() { const v = window.visualViewport; if (!v) return; rootStyle.setProperty("--vv-h", v.height + "px"); rootStyle.setProperty("--vv-top", v.offsetTop + "px"); }
+if (window.ResizeObserver) new ResizeObserver(syncTop).observe(topbar);
+window.addEventListener("resize", syncTop); syncTop();
+if (window.visualViewport) { visualViewport.addEventListener("resize", syncViewport); visualViewport.addEventListener("scroll", syncViewport); syncViewport(); }
 let scrolledKey = null;
 function autoScroll() {
   // bring the relevant part of the table into view (mainly for phones)
@@ -467,12 +479,13 @@ function seatHTML(p, h, mine) {
   const bodyStacks = stacks.length ? stacks.map((s) => stackHTML(p, s, h)).join("") : '<div class="empty">' + (mine ? "Your properties land here" : "No properties yet") + "</div>";
   const chips = p.bank.length ? p.bank.map((c) => {
     const el = h.bank.has(c.id), pk = h.picked.has(c.id);
-    return '<button class="chip' + (c.type !== "money" ? " act" : "") + (el ? " elig" : "") + (pk ? " picked" : "") + '" data-act="bank" data-owner="' + p.id + '" data-id="' + c.id + '" title="' + esc(cardName(c)) + '"' + (el ? "" : " tabindex=-1") + ">" + c.value + "M</button>";
+    const d = DENOMS.includes(c.value) ? c.value : "x";
+    return '<button class="coin c' + d + (el ? " elig" : "") + (pk ? " picked" : "") + '" data-act="bank" data-owner="' + p.id + '" data-id="' + c.id + '" title="' + esc(c.type === "money" ? coins(c.value) : cardName(c) + ", banked as " + coins(c.value)) + '" aria-label="' + esc(coins(c.value)) + '"' + (el ? "" : " tabindex=-1") + ">" + c.value + "</button>";
   }).join("") : '<span class="empty sm">Empty</span>';
   return '<section class="seat' + (mine ? " me" : "") + (isTurn ? " turn" : "") + (isResponder ? " responding" : "") + (seatable ? " elig" : "") + (seatPicked ? " picked" : "") + (game.winner === p.id ? " winner" : "") + '"' + (seatable ? ' data-act="seat" data-owner="' + p.id + '"' : "") + ">" +
     '<header class="seat-head"><span class="avatar" style="--av:' + p.color + '">' + esc(p.name.charAt(0).toUpperCase()) + "</span>" +
     '<div class="who"><b>' + esc(p.name) + (mine && isOnline() ? ' <em>(you)</em>' : "") + "</b><small>" + (game.winner === p.id ? "Winner!" : isResponder ? "Responding…" : isTurn ? "Playing now" : "Waiting") + "</small></div>" +
-    '<div class="stats">' + (mine ? "" : cardBack(p.hand.length)) + '<span class="pill bank-pill" title="Bank total">' + bankTotal + 'M</span><span class="pill sets-pill' + (setCount(p) >= 2 ? " hot" : "") + '" title="Complete sets">' + setCount(p) + "/3 sets</span></div></header>" +
+    '<div class="stats">' + (mine ? "" : cardBack(p.hand.length)) + '<span class="pill bank-pill" title="Bank total: ' + coins(bankTotal) + '"><span class="cn"></span>' + bankTotal + '</span><span class="pill sets-pill' + (setCount(p) >= 2 ? " hot" : "") + '" title="Complete sets">' + setCount(p) + "/3 sets</span></div></header>" +
     '<div class="tableau"><div class="bank"><span class="lbl">Bank</span><div class="chips">' + chips + "</div></div>" +
     '<div class="stacks">' + bodyStacks + "</div></div></section>";
 }
@@ -483,7 +496,7 @@ function stackHTML(p, s, h) {
   const picked = h.picked.has(key), threatened = h.stacks.has("T" + key) && s.complete;
   const b = (s.complete && p.builds[s.color]) || null;
   const builds = b ? [b.house && ["house", b.house], b.hotel && ["hotel", b.hotel]].filter(Boolean).map(([slot, c]) =>
-    '<button class="bld' + (h.builds.has(c.id) ? " elig" : "") + (h.picked.has(c.id) ? " picked" : "") + '" data-act="build" data-owner="' + p.id + '" data-id="' + c.id + '" title="' + (slot === "house" ? "House +3M" : "Hotel +4M") + '">' + (slot === "house" ? "⌂" : "▣") + "</button>").join("") : "";
+    '<button class="bld' + (h.builds.has(c.id) ? " elig" : "") + (h.picked.has(c.id) ? " picked" : "") + '" data-act="build" data-owner="' + p.id + '" data-id="' + c.id + '" title="' + (slot === "house" ? "House, +3 coins rent" : "Tower, +4 coins rent") + '">' + (slot === "house" ? "⌂" : "▣") + "</button>").join("") : "";
   const cards = s.cards.map((c, i) => {
     const ck = p.id + ":" + c.id, ce = h.cards.has(ck), cp = h.picked.has(c.id), ct = h.targeted.has(ck);
     return '<div class="tc' + (ce ? " elig" : "") + (cp ? " picked" : "") + (ct ? " targeted" : "") + '" style="--i:' + i + '" data-act="tcard" data-owner="' + p.id + '" data-id="' + c.id + '">' + cardFace(c) + "</div>";
@@ -521,20 +534,20 @@ function renderPrompt(me) {
     if (iCanAct()) {
       tone = "alert";
       if (pd.stage === "respond") {
-        html = '<div class="pt"><b>' + esc(from.name) + " → you: " + esc(pd.label) + (pd.chain ? " (they countered your No!)" : "") + "</b><span>" + what + "</span></div>" +
-          btn("no", "✋ Just Say No", "no") + btn("accept", STEAL.includes(pd.kind) ? "Accept" : "Pay " + pd.amount + "M", "ghost");
+        html = '<div class="pt"><b>' + esc(from.name) + " → you: " + esc(pd.label) + (pd.chain ? " (they countered your Nope!)" : "") + "</b><span>" + what + "</span></div>" +
+          btn("no", "✋ Nope!", "no") + btn("accept", STEAL.includes(pd.kind) ? "Accept" : "Pay " + coins(pd.amount), "ghost");
       } else if (pd.stage === "counter") {
-        html = '<div class="pt"><b>' + esc(target.name) + " said Just Say No!</b><span>Counter with your own Just Say No to push the " + esc(pd.label) + " through?</span></div>" +
-          btn("no", "✋ Just Say No back", "no") + btn("accept", "Let it go", "ghost");
+        html = '<div class="pt"><b>' + esc(target.name) + " said Nope!</b><span>Counter with your own Nope! to push the " + esc(pd.label) + " through?</span></div>" +
+          btn("no", "✋ Nope! back", "no") + btn("accept", "Let it go", "ghost");
       } else if (pd.stage === "pay") {
         const total = sum(payable(me).filter((a) => ui.paySel.has(a.id)));
-        html = '<div class="pt"><b>Pay ' + pd.amount + "M to " + esc(from.name) + "</b><span>Tap money, buildings or properties on <u>your</u> table. No change is given. Selected: <strong>" + total + "M</strong></span></div>" +
-          btn("pay", "Pay " + total + "M", "primary", total < pd.amount) + (ui.paySel.size ? btn("payclear", "Clear", "ghost") : "");
+        html = '<div class="pt"><b>Pay ' + coins(pd.amount) + " to " + esc(from.name) + "</b><span>Tap coins, buildings or properties on <u>your</u> table. No change is given. Selected: <strong>" + coins(total) + "</strong></span></div>" +
+          btn("pay", "Pay " + coins(total), "primary", total < pd.amount) + (ui.paySel.size ? btn("payclear", "Clear", "ghost") : "");
       }
     } else {
       tone = "wait";
-      const verb = pd.stage === "pay" ? "choosing how to pay " + pd.amount + "M" : pd.stage === "counter" ? "deciding whether to counter the Just Say No" : "deciding whether to Just Say No";
-      html = '<div class="pt"><b>' + esc(pd.label) + " · " + esc(from.name) + " → " + esc(target.name) + "</b><span>" + what + " Waiting for " + esc(resp ? resp.name : "") + " — " + verb + "…</span></div>";
+      const verb = pd.stage === "pay" ? "choosing how to pay " + coins(pd.amount) : pd.stage === "counter" ? "deciding whether to counter the Nope!" : "deciding whether to play Nope!";
+      html = '<div class="pt"><b>' + esc(pd.label) + " · " + esc(from.name) + " → " + esc(target.name) + "</b><span>" + what + " Waiting for " + esc(resp ? resp.name : "") + ", " + verb + "…</span></div>";
     }
   } else if (!myTurnFree()) {
     tone = "wait"; html = '<div class="pt"><b>' + esc(cur().name) + " is playing</b><span>You'll be asked if an action targets you.</span></div>";
@@ -552,31 +565,31 @@ function pendingDetail(pd, target) {
   if (pd.kind === "sly") return "Takes " + esc(target.name) + "'s " + esc(cardName(findProp(target.id, pd.takeId))) + " (highlighted).";
   if (pd.kind === "forced") return "Swaps " + esc(P(pd.from).name) + "'s " + esc(cardName(findProp(pd.from, pd.giveId))) + " for " + esc(target.name) + "'s " + esc(cardName(findProp(target.id, pd.takeId))) + ".";
   if (pd.kind === "breaker") return "Takes the complete " + esc(COLORS[pd.stackColor].name) + " set" + (target.builds[pd.stackColor] ? " with its buildings" : "") + ".";
-  if (pd.kind === "rent") return esc(COLORS[pd.color].name) + " rent: " + pd.amount + "M" + (pd.doubles ? " (doubled)" : "") + ".";
-  if (pd.kind === "debt") return "Owes 5M.";
-  if (pd.kind === "birthday") return "Each player gives 2M.";
+  if (pd.kind === "rent") return esc(COLORS[pd.color].name) + " rent: " + coins(pd.amount) + (pd.doubles ? " (doubled)" : "") + ".";
+  if (pd.kind === "debt") return "Owes 5 coins.";
+  if (pd.kind === "birthday") return "Each player gives 2 coins.";
   return "";
 }
 function modePrompt(me) {
   const m = ui.mode;
   if (m.kind === "sly") { const c = m.takeId && findProp(m.owner, m.takeId);
-    return '<div class="pt"><b>☞ Sly Deal</b><span>' + (c ? "Steal " + esc(P(m.owner).name) + "'s " + esc(cardName(c)) + "?" : "Tap a glowing property on an opponent's table (not part of a full set).") + "</span></div>" + btn("confirm", "Steal it", "primary", !c) + btn("cancel", "Cancel"); }
+    return '<div class="pt"><b>☞ Steal</b><span>' + (c ? "Take " + esc(P(m.owner).name) + "'s " + esc(cardName(c)) + "?" : "Tap a glowing property on an opponent's table (not part of a full set).") + "</span></div>" + btn("confirm", "Steal it", "primary", !c) + btn("cancel", "Cancel"); }
   if (m.kind === "forced") { const t = m.takeId && findProp(m.owner, m.takeId), g = m.giveId && findProp(me.id, m.giveId);
-    return '<div class="pt"><b>⇄ Forced Deal</b><span>' + (t ? "Take <strong>" + esc(cardName(t)) + "</strong> from " + esc(P(m.owner).name) : "① Tap the property you want from an opponent") + " · " + (g ? "give <strong>" + esc(cardName(g)) + "</strong>" : "② tap one of yours to give away") + "</span></div>" + btn("confirm", "Swap", "primary", !(t && g)) + btn("cancel", "Cancel"); }
-  if (m.kind === "breaker") return '<div class="pt"><b>⚡ Deal Breaker</b><span>' + (m.owner ? "Take " + esc(P(m.owner).name) + "'s complete " + esc(COLORS[m.stackColor].name) + " set?" : "Tap a complete set on an opponent's table.") + "</span></div>" + btn("confirm", "Break the deal", "primary", !m.owner) + btn("cancel", "Cancel");
+    return '<div class="pt"><b>⇄ Swap</b><span>' + (t ? "Take <strong>" + esc(cardName(t)) + "</strong> from " + esc(P(m.owner).name) : "① Tap the property you want from an opponent") + " · " + (g ? "give <strong>" + esc(cardName(g)) + "</strong>" : "② tap one of yours to give away") + "</span></div>" + btn("confirm", "Swap", "primary", !(t && g)) + btn("cancel", "Cancel"); }
+  if (m.kind === "breaker") return '<div class="pt"><b>⚡ Takeover</b><span>' + (m.owner ? "Take " + esc(P(m.owner).name) + "'s complete " + esc(COLORS[m.stackColor].name) + " set?" : "Tap a complete set on an opponent's table.") + "</span></div>" + btn("confirm", "Take it over", "primary", !m.owner) + btn("cancel", "Cancel");
   if (m.kind === "rent") {
     const card = me.hand.find((x) => x.id === m.cardId), dbl = doublesInHand(me), maxD = Math.min(dbl.length, game.plays - 1);
     const base = m.color ? rentFor(me, m.color) : 0, amt = base * Math.pow(2, m.doubles || 0);
     const who = card.any ? (m.target ? esc(P(m.target).name) : "①&nbsp;tap an opponent") : "every other player";
-    return '<div class="pt"><b>Charge rent</b><span>' + (m.color ? esc(COLORS[m.color].name) + " · <strong>" + amt + "M</strong>" : "Tap one of your glowing property sets") + " → " + who + "</span></div>" +
-      (maxD > 0 ? btn("double", "×2 Double" + (m.doubles ? " ✓" + (m.doubles > 1 ? m.doubles : "") : "") + " (" + dbl.length + ")", m.doubles ? "on" : "ghost") : "") +
-      btn("confirm", "Charge " + (m.color ? amt + "M" : ""), "primary", !m.color || (card.any && !m.target)) + btn("cancel", "Cancel");
+    return '<div class="pt"><b>Charge rent</b><span>' + (m.color ? esc(COLORS[m.color].name) + " · <strong>" + coins(amt) + "</strong>" : "Tap one of your glowing property sets") + " → " + who + "</span></div>" +
+      (maxD > 0 ? btn("double", "×2 Rent Hike" + (m.doubles ? " ✓" + (m.doubles > 1 ? m.doubles : "") : "") + " (" + dbl.length + ")", m.doubles ? "on" : "ghost") : "") +
+      btn("confirm", m.color ? "Charge " + coins(amt) : "Charge", "primary", !m.color || (card.any && !m.target)) + btn("cancel", "Cancel");
   }
-  if (m.kind === "debt") return '<div class="pt"><b>$ Debt Collector</b><span>' + (m.target ? esc(P(m.target).name) + " pays you 5M." : "Tap an opponent's area to choose who pays 5M.") + "</span></div>" + btn("confirm", "Collect 5M", "primary", !m.target) + btn("cancel", "Cancel");
-  if (m.kind === "build") return '<div class="pt"><b>' + (m.effect === "house" ? "⌂ House" : "▣ Hotel") + "</b><span>" + (m.color ? "Add to your " + esc(COLORS[m.color].name) + " set?" : "Tap one of your glowing complete sets.") + "</span></div>" + btn("confirm", "Build", "primary", !m.color) + btn("cancel", "Cancel");
+  if (m.kind === "debt") return '<div class="pt"><b>$ Collections</b><span>' + (m.target ? esc(P(m.target).name) + " pays you 5 coins." : "Tap an opponent's area to choose who pays 5 coins.") + "</span></div>" + btn("confirm", "Collect 5 coins", "primary", !m.target) + btn("cancel", "Cancel");
+  if (m.kind === "build") return '<div class="pt"><b>' + (m.effect === "house" ? "⌂ House" : "▣ Tower") + "</b><span>" + (m.color ? "Add to your " + esc(COLORS[m.color].name) + " set?" : "Tap one of your glowing complete sets.") + "</span></div>" + btn("confirm", "Build", "primary", !m.color) + btn("cancel", "Cancel");
   if (m.kind === "wildplay" || m.kind === "flip") {
     const c = m.kind === "flip" ? me.props.find((x) => x.id === m.cardId) : me.hand.find((x) => x.id === m.cardId);
-    return '<div class="pt"><b>' + (m.kind === "flip" ? "Flip wild card" : "Place wild card") + "</b><span>Choose a colour" + (m.kind === "flip" ? " — moving wilds is free on your turn." : ".") + '</span></div><div class="swatches">' +
+    return '<div class="pt"><b>' + (m.kind === "flip" ? "Flip wild card" : "Place wild card") + "</b><span>Choose a colour" + (m.kind === "flip" ? ". Moving wilds is free on your turn." : ".") + '</span></div><div class="swatches">' +
       c.colors.filter((k) => m.kind !== "flip" || k !== c.color).map((k) => '<button class="sw" data-act="btn" data-do="color" data-color="' + k + '" style="--c:' + COLORS[k].hex + ";--bi:" + COLORS[k].ink + '">' + esc(COLORS[k].name) + "</button>").join("") + "</div>" + btn("cancel", "Cancel");
   }
   if (m.kind === "discard") { const n = me.hand.length - 7;
@@ -587,15 +600,16 @@ function cardOptions(me) {
   const c = me.hand.find((x) => x.id === ui.selected); if (!c) return "";
   const noPlays = game.plays <= 0;
   let info = "", btns = "";
-  if (c.type === "money") { info = "Money · bank it to pay debts later."; btns = btn("bank", "Bank " + c.value + "M", "primary", noPlays); }
-  else if (c.type === "property") { info = COLORS[c.color].name + " · " + COLORS[c.color].need + " make a full set. Worth " + c.value + "M as payment."; btns = btn("property", "Play to table", "primary", noPlays); }
-  else if (c.type === "wild") { info = (c.any ? "Counts as any colour. No cash value — can't be used to pay." : "Counts as " + c.colors.map((k) => COLORS[k].name).join(" or ") + ". Flip it any time on your turn."); btns = btn("property", "Play to table", "primary", noPlays); }
-  else if (c.type === "rent") { info = c.any ? "Charge ONE player rent on any colour you own." : "Charge EVERY player rent on " + c.colors.map((k) => COLORS[k].name).join(" or ") + "."; btns = btn("play", "Charge rent", "primary", noPlays) + btn("bank", "Bank " + c.value + "M", "ghost", noPlays); }
+  const bankBtn = (kind) => btn("bank", "Bank " + coins(c.value), kind, noPlays);
+  if (c.type === "money") { info = "Bank it to pay debts later."; btns = bankBtn("primary"); }
+  else if (c.type === "property") { info = COLORS[c.color].name + " · " + COLORS[c.color].need + " make a full set. Worth " + coins(c.value) + " as payment."; btns = btn("property", "Play to table", "primary", noPlays); }
+  else if (c.type === "wild") { info = (c.any ? "Counts as any colour. Worth nothing, so it can't be used to pay." : "Counts as " + c.colors.map((k) => COLORS[k].name).join(" or ") + ". Flip it any time on your turn."); btns = btn("property", "Play to table", "primary", noPlays); }
+  else if (c.type === "rent") { info = c.any ? "Charge ONE player rent on any colour you own." : "Charge EVERY player rent on " + c.colors.map((k) => COLORS[k].name).join(" or ") + "."; btns = btn("play", "Charge rent", "primary", noPlays) + bankBtn("ghost"); }
   else {
     const a = ACTIONS[c.effect]; info = a.text;
-    if (c.effect === "no") { info += " Keep it in hand — you'll be offered it when an action hits you."; btns = btn("bank", "Bank " + c.value + "M", "ghost", noPlays); }
-    else if (c.effect === "double") { info += " Choose it from the rent screen."; btns = btn("bank", "Bank " + c.value + "M", "ghost", noPlays); }
-    else btns = btn("play", "Play " + a.name, "primary", noPlays) + btn("bank", "Bank " + c.value + "M", "ghost", noPlays);
+    if (c.effect === "no") { info += " Keep it in your hand; you'll be offered it when an action hits you."; btns = bankBtn("ghost"); }
+    else if (c.effect === "double") { info += " Choose it from the rent screen."; btns = bankBtn("ghost"); }
+    else btns = btn("play", "Play " + a.name, "primary", noPlays) + bankBtn("ghost");
   }
   return '<div class="pt"><b>' + esc(cardName(c)) + "</b><span>" + esc(info) + (noPlays ? " <strong>No plays left.</strong>" : "") + "</span></div>" + btns + btn("deselect", "✕", "ghost x");
 }
@@ -607,16 +621,16 @@ function renderHand(me) {
   wrap.innerHTML = me.hand.map((c, i) => {
     const sel = ui.selected === c.id || (disc && ui.mode.sel.includes(c.id));
     return '<button class="hc' + (sel ? " sel" : "") + (disc ? " discarding" : "") + '" style="--i:' + i + ";--n:" + me.hand.length + '" data-act="hand" data-id="' + c.id + '" aria-label="' + esc(cardName(c)) + '">' + cardFace(c) + "</button>";
-  }).join("") || '<div class="hand-empty">No cards in hand — you\'ll draw 5 next turn.</div>';
+  }).join("") || '<div class="hand-empty">No cards in hand. You\'ll draw 5 next turn.</div>';
   $("handLbl").textContent = isOnline() ? "Your hand · " + me.hand.length : me.name + "'s hand · " + me.hand.length;
 }
 function renderCurtain(me) {
   const c = $("curtain");
   if (isOnline() || game.winner || ui.revealedFor === me.id) { c.hidden = true; return; }
   const pd = game.pending;
-  const why = pd && responderId() === me.id ? (pd.stage === "counter" ? P(pd.targets[pd.ti]).name + " played Just Say No on your " + pd.label + "." : P(pd.from).name + " played " + pd.label + " on you.") : "It's your turn.";
+  const why = pd && responderId() === me.id ? (pd.stage === "counter" ? P(pd.targets[pd.ti]).name + " played Nope! on your " + pd.label + "." : P(pd.from).name + " played " + pd.label + " on you.") : "It's your turn.";
   c.hidden = false;
-  c.innerHTML = '<div class="curtain-card"><span class="avatar xl" style="--av:' + me.color + '">' + esc(me.name.charAt(0).toUpperCase()) + "</span><h2>Pass to " + esc(me.name) + "</h2><p>" + esc(why) + "</p><button class=\"pbtn primary\" data-act=\"btn\" data-do=\"reveal\">I'm " + esc(me.name) + " — show my cards</button></div>";
+  c.innerHTML = '<div class="curtain-card"><span class="avatar xl" style="--av:' + me.color + '">' + esc(me.name.charAt(0).toUpperCase()) + "</span><h2>Pass to " + esc(me.name) + "</h2><p>" + esc(why) + "</p><button class=\"pbtn primary\" data-act=\"btn\" data-do=\"reveal\">I'm " + esc(me.name) + ", show my cards</button></div>";
 }
 let turnSeen = { key: null, at: 0 };
 function turnStartedAt() {
@@ -669,7 +683,7 @@ function startCardPlay(c) {
     case "breaker": if (!breakerTargets(me.id).length) return toast("Nobody has a complete set to steal yet."); ui.mode = { kind: "breaker", cardId: c.id }; return render();
     case "house": case "hotel": {
       const cols = buildColors(me, c.effect);
-      if (!cols.length) return toast(c.effect === "house" ? "You need a complete set (not Railroad/Utility) without a House." : "You need a complete set that already has a House.");
+      if (!cols.length) return toast(c.effect === "house" ? "You need a complete set (not Transit or Power) without a House." : "You need a complete set that already has a House.");
       ui.mode = { kind: "build", effect: c.effect, cardId: c.id, color: cols.length === 1 ? cols[0] : null }; return render();
     }
   }
@@ -702,12 +716,12 @@ function onTableCard(owner, id) {
   if (m && m.kind === "debt" && owner !== me.id) { m.target = owner; return render(); }
   if (m && m.kind === "sly") {
     if (owner === me.id) return toast("Pick a card from an opponent's table.");
-    if (inFullSet(P(owner), id)) return toast("That card is part of a full set — Sly Deal can't take it.");
+    if (inFullSet(P(owner), id)) return toast("That card is part of a full set, so Steal can't take it.");
     m.owner = owner; m.takeId = id; return render();
   }
   if (m && m.kind === "forced") {
     if (owner === me.id) { m.giveId = id; }
-    else { if (inFullSet(P(owner), id)) return toast("That card is part of a full set — it can't be swapped."); m.owner = owner; m.takeId = id; }
+    else { if (inFullSet(P(owner), id)) return toast("That card is part of a full set, so it can't be swapped."); m.owner = owner; m.takeId = id; }
     return render();
   }
   if (m && (m.kind === "breaker" || m.kind === "rent" || m.kind === "build")) {
@@ -723,7 +737,7 @@ function onStack(owner, color) {
   if (m.kind === "debt") { if (owner !== me.id) { m.target = owner; render(); } return; }
   if (m.kind === "breaker") {
     if (owner === me.id) return toast("Choose an opponent's complete set.");
-    if (!stacksFor(P(owner), color).some((s) => s.complete)) return toast("Deal Breaker only takes complete sets.");
+    if (!stacksFor(P(owner), color).some((s) => s.complete)) return toast("Takeover only takes complete sets.");
     m.owner = owner; m.stackColor = color; return render();
   }
   if (m.kind === "rent") {
@@ -792,7 +806,7 @@ function onButton(d, el) {
     case "pay": {
       if (!iCanAct()) return; const pd = game.pending; if (!pd || pd.stage !== "pay") return;
       const ids = [...ui.paySel], total = sum(payable(me).filter((a) => ids.includes(a.id)));
-      if (total < pd.amount) return toast("Select at least " + pd.amount + "M.");
+      if (total < pd.amount) return toast("Select at least " + coins(pd.amount) + ".");
       ui.paySel.clear(); submitPayment(ids); render(); commit(); return;
     }
   }
@@ -819,10 +833,8 @@ let lastLogTop = null;
 function announceRemote() {
   if (!game || !game.log.length) return;
   const top = game.log[0];
-  if (lastLogTop && top.t !== lastLogTop && /Just Say No|stole|swapped|broke/.test(top.text)) {
-    const kind = /Just Say No/.test(top.text) ? "no" : "steal";
-    flash(kind === "no" ? "JUST SAY NO!" : "DEAL!", top.text.replace(/^[^A-Za-z]+/, ""), kind);
-  }
+  const title = /Nope!/.test(top.text) ? "NOPE!" : / stole /.test(top.text) ? "STEAL!" : / swapped /.test(top.text) ? "SWAP!" : / took over /.test(top.text) ? "TAKEOVER!" : null;
+  if (lastLogTop && top.t !== lastLogTop && title) flash(title, top.text.replace(/^[^A-Za-z]+/, ""), title === "NOPE!" ? "no" : "steal");
   lastLogTop = top.t;
 }
 
@@ -835,14 +847,14 @@ function openModal(title, body) {
 function closeModal() { $("modal").hidden = true; $("modal").innerHTML = ""; }
 function showRules() {
   openModal("How to play", `
-  <p class="lead">Be the first to collect <b>3 complete property sets of different colours</b>.</p>
-  <h3>Your turn</h3><ol><li>Draw 2 cards (5 if your hand is empty).</li><li>Play up to <b>3 cards</b>: bank money/actions, lay properties, or play actions.</li><li>End your turn with 7 cards or fewer. After your 3rd play it ends automatically.</li></ol>
-  <h3>Paying</h3><p>Pay from your bank, buildings or properties on the table — never from your hand. No change is given. If you can't cover it, you pay everything you have. The rainbow wild has no cash value.</p>
-  <h3>Stealing (tap the table)</h3><ul><li><b>Sly Deal</b> — tap one opponent property that isn't in a full set.</li><li><b>Forced Deal</b> — tap their card (not from a full set) and any one of yours — even from a full set — to swap.</li><li><b>Deal Breaker</b> — tap an opponent's complete set; buildings come with it.</li></ul>
-  <h3>Just Say No</h3><p>When an action targets you, you're offered your Just Say No. The attacker can counter with their own, you can counter back, and so on. It never uses one of your 3 plays. Against Birthday or a two-colour Rent it only protects you.</p>
-  <h3>Rent</h3><ul><li><b>Two-colour Rent</b> charges <b>every</b> player. <b>Wild Rent</b> charges <b>one</b> player any colour you own.</li><li><b>Double The Rent</b> is played with a Rent card and uses a play too.</li><li>House +3M, Hotel +4M on full sets (not Railroads/Utilities).</li></ul>
-  <h3>Wild properties</h3><p>Tap a wild on your table to flip or move it — free, any time on your turn.</p>
-  <p class="fine">Unofficial fan-made table. Not affiliated with Hasbro.</p>`);
+  <p class="lead">Be the first to collect <b>3 complete property sets in different colours</b>.</p>
+  <h3>Your turn</h3><ol><li>Draw 2 cards, or 5 if your hand is empty.</li><li>Play up to <b>3 cards</b>: bank coins or actions, lay down properties, or play actions.</li><li>End with 7 cards or fewer. After your third play the turn ends by itself.</li></ol>
+  <h3>Paying</h3><p>Pay with coins from your bank, buildings or properties on your table, never from your hand. No change is given. If you can't cover the bill, you pay everything you have. The Rainbow Wild is worth nothing.</p>
+  <h3>Coins</h3><p class="coin-key">${DENOMS.map((n) => coin(n)).join("")}<span>Each colour is a different value.</span></p>
+  <h3>Taking cards (tap the table)</h3><ul><li><b>Steal</b>: tap one opponent property that isn't in a full set.</li><li><b>Swap</b>: tap their card (not from a full set), then any one of yours, even from a full set.</li><li><b>Takeover</b>: tap an opponent's complete set. Its buildings come with it.</li></ul>
+  <h3>Nope!</h3><p>When an action targets you, you can block it with a Nope! card. The attacker can Nope! you back, you can reply again, and so on. It never uses one of your 3 plays. Against Housewarming or a two-colour Rent it only protects you.</p>
+  <h3>Rent</h3><ul><li><b>Two-colour Rent</b> charges <b>every</b> player. <b>Wild Rent</b> charges <b>one</b> player for any colour you own.</li><li><b>Rent Hike</b> doubles a Rent card and uses a play too.</li><li>A <b>House</b> adds 3 coins and a <b>Tower</b> adds 4 coins to a full set's rent (not Transit or Power).</li></ul>
+  <h3>Wild properties</h3><p>Tap a wild on your table to flip or move it. It's free, any time on your turn.</p>`);
 }
 $("rulesBtn").addEventListener("click", showRules);
 $("logToggle").addEventListener("click", () => { ui.logOpen = !ui.logOpen; $("logToggle").textContent = ui.logOpen ? "Less" : "More"; render(); });
@@ -865,7 +877,7 @@ function restartGame() {
   if (!names.length) return;
   newGame(names); ui.mode = null; ui.selected = null; ui.paySel.clear();
   ui.revealedFor = cur().id; log("↻ Game restarted" + (room ? " by " + room.name : "") + ".");
-  render(); commit(); toast("Fresh deal — good luck!");
+  render(); commit(); toast("Fresh deal. Good luck!");
 }
 $("restartBtn").addEventListener("click", confirmRestart);
 
@@ -897,6 +909,7 @@ async function roomCall(body, method = "POST") {
   try { r = await fetch(url, { method, headers: method === "GET" ? {} : { "Content-Type": "text/plain;charset=UTF-8" }, body: method === "GET" ? undefined : JSON.stringify(body) }); }
   catch (e) { throw new Error(navigator.onLine === false ? "You're offline. Online rooms need an internet connection; same-device games still work." : "Couldn't reach the room service. Check your connection and try again."); }
   const data = await r.json().catch(() => ({ error: "The room service returned an unreadable response." }));
+  if (data && data.live) liveSupported = true;
   if (!r.ok) { const err = new Error(data.error || "Room request failed."); err.data = data; err.status = r.status; throw err; }
   return data;
 }
@@ -915,16 +928,54 @@ function applyRemote(r) {
   game = r.gameState; room.revision = r.revision; room.status = "playing";
   showGame(); announceRemote(); render();
 }
+function onRoomData(r) {
+  if (!room || !r) return;
+  if (r.status !== "playing") { room.status = r.status; renderLobby(r); return; }
+  if (!game || r.revision > (room.revision || 0) || room.status !== "playing") { renderLobby(r); applyRemote(r); }
+}
 async function poll() {
   if (!room || saving) return;
   try {
     const { room: r } = await roomCall({ code: room.code, token: room.token }, "GET");
     if (!room) return; // left while the request was in flight
-    if (r.status !== "playing") { room.status = r.status; renderLobby(r); return; }
-    if (!game || r.revision > (room.revision || 0) || room.status !== "playing") { renderLobby(r); applyRemote(r); }
-  } catch (e) { if (e.status === 403 || e.status === 404) { roomMsg(e.message, true); stopChat(); room = null; saveRoomLocal(); clearInterval(pollT); } }
+    onRoomData(r);
+    if (liveSupported && !live && !liveT && liveTries < 5) connectLive();
+  } catch (e) { if (e.status === 403 || e.status === 404) { roomMsg(e.message, true); closeLive(); stopChat(); room = null; saveRoomLocal(); clearInterval(pollT); } }
 }
-function startPolling() { clearInterval(pollT); poll(); pollT = setInterval(poll, 1200); }
+// Polling is the fallback. With a live connection it only runs as a slow safety net.
+function setPolling() {
+  clearInterval(pollT); pollT = setInterval(poll, liveUp ? 15000 : 1200);
+  if (chat.timer) { clearInterval(chat.timer); chat.timer = setInterval(pollChat, liveUp ? 20000 : 1500); }
+}
+function startPolling() { poll(); setPolling(); if (liveSupported) connectLive(); }
+
+/* Live connection: the Cloudflare server pushes room and chat changes over a WebSocket the moment they happen.
+   Servers without /api/live (the Node server, Hatchable) simply keep polling. */
+let live = null, liveUp = false, liveTries = 0, liveT = null, liveQueued = null, liveSupported = false;
+function liveURL() { return (API || location.origin).replace(/^http/, "ws") + "/api/live?code=" + encodeURIComponent(room.code) + "&token=" + encodeURIComponent(room.token); }
+function connectLive() {
+  closeLive();
+  if (!room || !window.WebSocket) return;
+  let ws; try { ws = new WebSocket(liveURL()); } catch (e) { return; }
+  live = ws;
+  ws.onopen = () => { if (live !== ws) return; liveUp = true; liveTries = 0; setPolling(); };
+  ws.onmessage = (e) => {
+    if (live !== ws) return; let d; try { d = JSON.parse(e.data); } catch (err) { return; }
+    if (d.type === "room") { if (saving || saveQueued) liveQueued = d.room; else onRoomData(d.room); }
+    else if (d.type === "chat" && d.message) addMessages([d.message]);
+  };
+  ws.onclose = () => {
+    if (live !== ws) return;
+    const wasUp = liveUp; live = null; liveUp = false;
+    if (!room) return;
+    setPolling(); poll();
+    // Reconnect after drops; give up quietly on servers that have no live endpoint.
+    if (wasUp || liveTries < 5) liveT = setTimeout(connectLive, Math.min(15000, 1000 * 2 ** liveTries++));
+  };
+}
+function closeLive() { clearTimeout(liveT); liveT = null; const ws = live; live = null; liveUp = false; if (ws) { try { ws.close(); } catch (e) {} } }
+setInterval(() => { if (live && liveUp) { try { live.send("ping"); } catch (e) {} } }, 25000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && room && !live) { liveTries = 0; connectLive(); } });
 async function commit() {
   if (!isOnline() || !game) return;
   if (saving) { saveQueued = true; return; }
@@ -933,9 +984,13 @@ async function commit() {
     const { room: r } = await roomCall({ action: "save", code: room.code, token: room.token, revision: room.revision, gameState: game });
     room.revision = r.revision;
   } catch (e) {
-    if (e.data && e.data.room) { toast("Another move landed first — synced to the latest table."); applyRemote(e.data.room); }
-    else toast("Connection hiccup — retrying…");
-  } finally { saving = false; if (saveQueued) { saveQueued = false; commit(); } }
+    if (e.data && e.data.room) { toast("Another move landed first. The table is up to date now."); applyRemote(e.data.room); }
+    else toast("Connection hiccup. Retrying…");
+  } finally {
+    saving = false;
+    if (saveQueued) { saveQueued = false; commit(); }
+    else if (liveQueued) { const q = liveQueued; liveQueued = null; onRoomData(q); }
+  }
 }
 $("createRoomBtn").addEventListener("click", async () => {
   const name = $("roomName").value.trim(); if (!name) return roomMsg("Enter your name first.", true);
@@ -957,7 +1012,7 @@ $("startRoomBtn").addEventListener("click", async () => {
   catch (e) { game = null; roomMsg(e.message, true); }
 });
 async function leaveRoom() {
-  clearInterval(pollT);
+  clearInterval(pollT); closeLive();
   if (room) { try { await roomCall({ action: "leave", code: room.code, token: room.token }); } catch (e) {} }
   stopChat(); room = null; roomInfo = null; savedRoom = null; saveRoomLocal(); $("lobby").hidden = true; $("rejoin").hidden = true; $("modeLbl").textContent = "LOCAL TABLE"; roomMsg("");
 }
@@ -978,10 +1033,10 @@ $("rejoinBtn").addEventListener("click", () => {
 $("forgetBtn").addEventListener("click", async () => { if (!savedRoom) return; room = { ...savedRoom }; await leaveRoom(); roomMsg("Left the room. Start a new game whenever you like."); });
 
 /* ---------------- room chat ---------------- */
-const QUICK = ["👍", "😂", "😱", "😡", "Nice deal!", "Just say no 😏", "Your turn!", "GG"];
+const QUICK = ["👍", "😂", "😱", "😡", "Nice move!", "Nope! 😏", "Your turn!", "GG"];
 const chat = { after: 0, msgs: [], open: false, unread: 0, timer: null, busy: false, primed: false };
 function chatColor(name) { const i = roomInfo ? roomInfo.players.findIndex((p) => p.name === name) : -1; return AVATAR_COLORS[(i < 0 ? 0 : i) % 5]; }
-function startChat() { $("chatBtn").hidden = false; clearInterval(chat.timer); pollChat(); chat.timer = setInterval(pollChat, 1500); }
+function startChat() { $("chatBtn").hidden = false; clearInterval(chat.timer); pollChat(); chat.timer = setInterval(pollChat, liveUp ? 20000 : 1500); }
 function stopChat() { clearInterval(chat.timer); chat.timer = null; chat.primed = false; chat.after = 0; chat.msgs = []; chat.unread = 0; setChatOpen(false); $("chatBtn").hidden = true; }
 async function pollChat() {
   if (!room || chat.busy) return; chat.busy = true;
@@ -1004,7 +1059,7 @@ function renderChat() {
   list.innerHTML = chat.msgs.length ? chat.msgs.map((m) => {
     const mine = room && m.name === room.name, emoji = /^(\p{Extended_Pictographic}️?){1,3}$/u.test(m.body);
     return '<li class="msg' + (mine ? " mine" : "") + (emoji ? " emoji" : "") + '"><div class="mwho" style="--av:' + chatColor(m.name) + '"><i></i>' + esc(mine ? "You" : m.name) + "</div><p>" + esc(m.body) + "</p></li>";
-  }).join("") : '<li class="chat-empty">No messages yet — say hi 👋</li>';
+  }).join("") : '<li class="chat-empty">No messages yet. Say hi 👋</li>';
   if (nearBottom || chat.open) list.scrollTop = list.scrollHeight;
 }
 let peekT = null;
@@ -1021,7 +1076,7 @@ async function sendChat(text) {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) return toast(d.error || "Message not sent.");
     addMessages([d.message]); $("chatList").scrollTop = $("chatList").scrollHeight;
-  } catch (e) { toast("Message not sent — check your connection."); }
+  } catch (e) { toast("Message not sent. Check your connection."); }
 }
 $("chatBtn").addEventListener("click", () => setChatOpen(!chat.open));
 $("chatClose").addEventListener("click", () => setChatOpen(false));
@@ -1037,11 +1092,11 @@ const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.
 let installPrompt = null;
 function showInstall(v) { $("installBtn").hidden = !v || standalone(); }
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installPrompt = e; showInstall(true); });
-window.addEventListener("appinstalled", () => { installPrompt = null; showInstall(false); toast("Deal Table is installed — find it on your home screen."); });
+window.addEventListener("appinstalled", () => { installPrompt = null; showInstall(false); toast("Set & Steal is installed. Find it on your home screen."); });
 if (isIOS() && !standalone()) showInstall(true); // iPhone/iPad: Safari has no install prompt, so show instructions instead
 $("installBtn").addEventListener("click", async () => {
   if (installPrompt) { installPrompt.prompt(); const r = await installPrompt.userChoice.catch(() => null); installPrompt = null; if (r && r.outcome === "accepted") showInstall(false); return; }
-  if (isIOS()) return openModal("Install on iPhone / iPad", '<ol class="steps"><li>Open this page in <b>Safari</b>.</li><li>Tap the <b>Share</b> button <span class="kbd">⬆︎</span> at the bottom (or top on iPad).</li><li>Scroll and tap <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol><p>Deal Table then opens full-screen from its own icon, and same-device games work offline.</p>');
+  if (isIOS()) return openModal("Install on iPhone / iPad", '<ol class="steps"><li>Open this page in <b>Safari</b>.</li><li>Tap the <b>Share</b> button <span class="kbd">⬆︎</span> at the bottom (or top on iPad).</li><li>Scroll and tap <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol><p>Set & Steal then opens full-screen from its own icon, and same-device games work offline.</p>');
   openModal("Install the app", '<p>In Chrome or Edge, open the browser menu <span class="kbd">⋮</span> and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>');
 });
 if (standalone()) document.documentElement.classList.add("is-app");
@@ -1050,5 +1105,5 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
 }
 
 renderNameFields();
-window.__deal = { get game() { return game; }, ui, COLORS, rentFor, stacksFor, payable, inFullSet, render, commit }; // debugging hook
+window.__deal = { get game() { return game; }, ui, COLORS, rentFor, stacksFor, payable, inFullSet, render, commit, live: () => liveUp }; // debugging hook
 })();

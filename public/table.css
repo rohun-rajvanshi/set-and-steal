@@ -1,4 +1,4 @@
-/* Deal Table — felt-table design */
+/* Set & Steal: felt-table design */
 :root{
   --felt:#0f3d2d; --felt-2:#145238; --felt-hi:#1d6b49; --rail:#0a2b20;
   --cream:#fbf6ea; --paper:#fffdf7; --ink:#1d2622; --muted:#6b7a72;
@@ -113,11 +113,22 @@ button:disabled{cursor:not-allowed}
 .tableau{display:flex;gap:12px;align-items:flex-start}
 .bank{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;width:66px}
 .bank .lbl{color:#9fb8aa;font-size:10px;margin:0}
-.chips{display:flex;flex-wrap:wrap;gap:4px}
-.chip{border:0;min-width:30px;padding:5px 6px;border-radius:7px;background:linear-gradient(160deg,#e8f6e9,#bfe3c9);color:#1e4a2c;font:800 11px var(--display);box-shadow:0 2px 0 #7fae8c;cursor:default}
-.chip.act{background:linear-gradient(160deg,#fff3d6,#f9d98d);color:#6b4a10;box-shadow:0 2px 0 #c9a24c}
-.chip.elig{cursor:pointer;outline:2px solid var(--gold);outline-offset:1px;animation:glow 1.3s infinite}
-.chip.picked{background:var(--gold);color:var(--ink);transform:translateY(-2px);box-shadow:0 0 0 2px #fff,0 4px 10px rgba(0,0,0,.35);animation:none}
+.chips{display:flex;flex-wrap:wrap;gap:5px 4px}
+/* coins: one colour per value */
+.coin{--c1:#ffe9a3;--c2:#e2a72a;--edge:#94680b;--ink:#3d2a00;display:inline-grid;place-items:center;flex:0 0 auto;width:28px;height:28px;padding:0;border:0;border-radius:50%;
+  background:radial-gradient(circle at 34% 28%,var(--c1),var(--c2) 72%);color:var(--ink);font:800 12px/1 var(--display);letter-spacing:-.3px;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.4),inset 0 0 0 4px var(--c2),inset 0 0 0 5px rgba(0,0,0,.16),0 2px 0 var(--edge),0 3px 5px rgba(0,0,0,.28);cursor:default;user-select:none}
+.coin.c1{--c1:#f6c7a0;--c2:#c47a43;--edge:#7f461d;--ink:#3a1a04}
+.coin.c2{--c1:#ffffff;--c2:#b4bec7;--edge:#6c7882;--ink:#25303a}
+.coin.c3{--c1:#b5ecc8;--c2:#3ea56a;--edge:#21633c;--ink:#05291a}
+.coin.c4{--c1:#b9d4ff;--c2:#3b78dc;--edge:#1d4791;--ink:#fff}
+.coin.c5{--c1:#ffeaa6;--c2:#e6ab2a;--edge:#94680b;--ink:#3d2a00}
+.coin.c10{--c1:#dcc8ff;--c2:#7f50dc;--edge:#4a2696;--ink:#fff}
+.coin.c4,.coin.c10{text-shadow:0 1px 1px rgba(0,0,0,.35)}
+.coin.elig{cursor:pointer;outline:2px solid var(--gold);outline-offset:2px;animation:glow 1.3s infinite}
+.coin.picked{transform:translateY(-3px) scale(1.08);outline:3px solid #fff;outline-offset:1px;animation:none}
+.cn{display:inline-block;width:.8em;height:.8em;margin:0 .2em 0 .1em;border-radius:50%;vertical-align:-.08em;background:radial-gradient(circle at 34% 28%,#ffeaa6,#e6ab2a 72%);box-shadow:0 1px 0 #94680b}
+.bank-pill .cn{margin-left:0}
 .stacks{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:10px 8px;align-items:flex-start;min-height:92px}
 .empty{color:#86a796;font-size:13px;padding:6px 0;font-style:italic}
 .empty.sm{font-size:11px;padding:0}
@@ -158,8 +169,8 @@ body.targeting .stack.elig .tc .card,body.targeting .stack.picked .tc .card{filt
   border:calc(var(--w)*.045) solid var(--paper);box-shadow:0 1px 0 rgba(0,0,0,.08),0 3px 8px rgba(0,0,0,.35);overflow:hidden;font-size:calc(var(--w)*.13);
   display:flex;flex-direction:column;align-items:center;text-align:center;user-select:none}
 .stack .card{--w:inherit;width:var(--w);height:calc(var(--w)*1.4);font-size:calc(var(--w)*.13)}
-.cv{position:absolute;top:3%;left:4%;z-index:2;min-width:2.1em;height:2.1em;display:grid;place-items:center;border-radius:50%;background:var(--paper);border:1px solid rgba(0,0,0,.15);font:800 .78em/1 var(--display);color:var(--ink)}
-.cv.none{opacity:.5}
+.coin.cv{position:absolute;top:3%;left:4%;z-index:2;width:2.15em;height:2.15em;font:800 .8em/1 var(--display);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45),0 1px 0 var(--edge),0 1px 3px rgba(0,0,0,.25)}
+.coin.cv.none{--c1:#f2efe6;--c2:#d6d0c2;--edge:#a39d8f;--ink:#7b766a}
 .card .band{width:100%;min-height:30%;display:flex;align-items:flex-end;justify-content:center;padding:0 4% 4%;background:var(--c);color:var(--bi,#fff);border-radius:calc(var(--w)*.06) calc(var(--w)*.06) 0 0;font:800 .95em/1 var(--display);letter-spacing:-.2px}
 
 
@@ -184,12 +195,10 @@ body.targeting .stack.elig .tc .card,body.targeting .stack.picked .tc .card{filt
 .card.action.fx-house .disc,.card.action.fx-hotel .disc{border-color:#2f9b58;color:#2f9b58}
 .card .ctitle{margin-top:6%;font:800 .9em/1.02 var(--display);padding:0 6%}
 .card .csub{margin-top:4%;font-size:.55em;line-height:1.2;color:var(--muted);padding:0 7%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
-.card.money{background:radial-gradient(circle at 50% 45%,#f3fbf3,#d3ecd8);}
-.card.money .big{margin-top:30%;font:800 2.6em/1 var(--display);color:#1e5b36;letter-spacing:-1px}
-.card.money .big small{font-size:.45em}
-.card.money.m5,.card.money.m10{background:radial-gradient(circle at 50% 45%,#fffaf0,#f7e0a8)}
-.card.money.m5 .big,.card.money.m10 .big{color:#7a4e08}
-.card.money .csub{margin-top:auto;padding-bottom:6%}
+.card.money{background:radial-gradient(circle at 50% 42%,#fffdf6,#efe7d2)}
+.card.money .coin.big{width:66%;height:auto;aspect-ratio:1;margin-top:24%;font:800 2.3em/1 var(--display);letter-spacing:-1px;
+  box-shadow:inset 0 0 0 .14em rgba(255,255,255,.45),inset 0 0 0 .26em var(--c2),inset 0 0 0 .32em rgba(0,0,0,.16),0 .12em 0 var(--edge),0 .2em .4em rgba(0,0,0,.25)}
+.card.money .csub{margin-top:auto;padding-bottom:7%;font-weight:700;letter-spacing:.5px;text-transform:uppercase;font-size:.6em}
 .card.back{background:repeating-linear-gradient(45deg,#c8372b 0 6px,#d9483b 6px 12px);border-color:var(--cream);justify-content:center}
 .card.back span{background:var(--cream);color:#c8372b;font:800 .9em var(--display);padding:4px 6px;border-radius:5px;transform:rotate(-12deg);letter-spacing:1px}
 
@@ -280,13 +289,15 @@ body.targeting .stack.elig .tc .card,body.targeting .stack.picked .tc .card{filt
 .modal-body p,.modal-body ul,.modal-body ol{margin:4px 0}
 .modal-body .lead{font-size:16px}
 .modal-body .fine{font-size:12px;color:var(--muted);margin-top:16px}
+.coin-key{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.coin-key span{color:var(--muted);font-size:14px}
 .mrow{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 .flash{position:fixed;left:50%;top:38%;z-index:45;transform:translate(-50%,-50%) scale(.7);opacity:0;pointer-events:none;text-align:center;transition:.25s cubic-bezier(.2,.8,.3,1.4)}
 .flash.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .flash b{display:block;font:800 clamp(34px,7vw,64px)/1 var(--display);color:var(--gold);text-shadow:0 4px 0 #6b4a10,0 10px 30px rgba(0,0,0,.5);letter-spacing:-1px;transform:rotate(-3deg)}
 .flash.no b{color:#ff6fa8;text-shadow:0 4px 0 #6d1238,0 10px 30px rgba(0,0,0,.5)}
 .flash span{display:inline-block;margin-top:10px;background:var(--paper);color:var(--ink);padding:6px 12px;border-radius:999px;font-weight:700;box-shadow:var(--shadow)}
-.toast{position:fixed;left:50%;top:76px;z-index:60;transform:translate(-50%,-20px);opacity:0;padding:10px 16px;border-radius:12px;background:var(--ink);color:var(--cream);font-weight:600;font-size:14px;box-shadow:var(--shadow);transition:.2s;pointer-events:none;max-width:90vw;text-align:center}
+.toast{position:fixed;left:50%;top:calc(var(--top-h,60px) + 12px);z-index:60;transform:translate(-50%,-20px);opacity:0;padding:10px 16px;border-radius:12px;background:var(--ink);color:var(--cream);font-weight:600;font-size:14px;box-shadow:var(--shadow);transition:.2s;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
 /* ---------- responsive ---------- */
@@ -307,6 +318,7 @@ body.targeting .stack.elig .tc .card,body.targeting .stack.picked .tc .card{filt
   .stack{--w:50px;--step:17px}
   .mine .stack{--w:54px;--step:18px}
   .bank{width:52px}
+  .bank .coin{width:24px;height:24px;font-size:11px}
   .centre{grid-template-columns:auto 1fr;gap:8px}
   .piles{padding:8px 10px;gap:10px}
   .pile .card,.pile #discardTop .card{--w:40px}
@@ -329,6 +341,52 @@ body.targeting .stack.elig .tc .card,body.targeting .stack.picked .tc .card{filt
   .pbtn{padding:9px 12px;font-size:13.5px}
   .brand small{display:none}
 }
+/* Phones held sideways: the prompt and hand move into a panel on the right, and the table gets the rest. */
+@media (orientation:landscape) and (max-height:520px){
+  :root{--side-w:clamp(230px,34vw,300px)}
+  .topbar{padding-top:max(6px,env(safe-area-inset-top));padding-bottom:6px}
+  .logo{width:28px;height:28px;font-size:16px}
+  .brand b{font-size:16px}.brand small{display:none}
+  .tbtn{padding:6px 11px;font-size:13px}
+  .setup{padding-top:18px;padding-bottom:18px}
+  .hero h1{font-size:34px;margin:10px 0}
+  .hero-cards{display:none}
+  .game{gap:8px;padding:8px calc(var(--side-w) + max(8px,env(safe-area-inset-right))) 16px max(8px,env(safe-area-inset-left))}
+  .opponents{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px}
+  .opponents .seat{flex:0 0 88%;scroll-snap-align:start}
+  .opponents.n1 .seat{flex-basis:100%}
+  .seat{padding:8px 10px 10px}
+  .stack{--w:46px;--step:15px}.mine .stack{--w:50px;--step:16px}
+  .stacks{min-height:70px}
+  .bank{width:52px}
+  .bank .coin{width:24px;height:24px;font-size:11px}
+  .centre{grid-template-columns:auto 1fr;gap:8px}
+  .piles{padding:6px 10px;gap:10px}
+  .pile .card,.pile #discardTop .card{--w:38px}
+  .pile .card{font-size:5px}
+  #discardTop .slot{width:38px;height:53px;font-size:9px}
+  .turnbox{padding:6px 10px;gap:4px 10px}
+  .turn-who b{font-size:16px}.turn-who small{font-size:12px}
+  .end-btn{padding:7px 12px;font-size:14px;margin-left:auto}
+  .log{grid-column:1/-1;padding:6px 12px}
+  .log ul{max-height:38px}
+  .mine{scroll-margin-bottom:8px}
+  .dock{left:auto;right:0;top:var(--top-h,48px);bottom:0;width:calc(var(--side-w) + env(safe-area-inset-right));display:flex;flex-direction:column;gap:6px;
+    padding:8px max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) 8px;background:rgba(6,30,22,.97);border-left:1px solid var(--line)}
+  .prompt{margin:0;flex:0 0 auto;max-height:58%;overflow-y:auto;min-height:0;padding:8px 10px;gap:6px;border-left-width:5px}
+  .pt{min-width:0;flex:1 1 100%}
+  .pt b{font-size:14px}.pt span{font-size:12px}
+  .pbtn{padding:7px 11px;font-size:13px}
+  .hand-wrap{flex:1;min-height:0;width:100%;display:flex;flex-direction:column}
+  .hand{flex:1;min-height:0;flex-wrap:wrap;justify-content:center;align-content:flex-start;gap:8px 6px;padding:6px 2px 10px;overflow-x:hidden;overflow-y:auto}
+  .hc{margin:0;transform:none}
+  .hc,.hc .card{--w:60px}
+  .hc:hover{transform:translateY(-3px)}
+  .hc.sel{transform:translateY(-4px) scale(1.05)}
+  .hand-hidden{flex-wrap:wrap;padding:8px}
+  .hand-hidden .hb{width:44px;height:62px}
+  .hand-empty{padding:12px}
+}
 .rejoin{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:12px 14px;border-radius:14px;background:#fff4d6;border:1px solid #f0d98c}
 .rejoin b{display:block;font:800 15px var(--display)}
 .rejoin small{color:var(--muted);font-size:13px}
@@ -337,7 +395,7 @@ body.targeting .stack.elig .tc .card,body.targeting .stack.picked .tc .card{filt
 /* ---------- room chat ---------- */
 .chat-btn{position:relative}
 .chat-badge{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:var(--red);color:#fff;font:800 11px/19px var(--display);text-align:center;box-shadow:0 0 0 2px var(--felt)}
-.chat-panel{position:fixed;top:64px;right:12px;bottom:12px;width:min(360px,calc(100vw - 24px));z-index:35;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden;transform:translateX(calc(100% + 24px));visibility:hidden;transition:transform .25s ease,visibility 0s .25s}
+.chat-panel{position:fixed;top:calc(var(--top-h,60px) + 8px);right:12px;bottom:12px;width:min(360px,calc(100vw - 24px));z-index:46;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden;transform:translateX(calc(100% + 24px));visibility:hidden;transition:transform .25s ease,visibility 0s .25s}
 .chat-panel.open{transform:none;visibility:visible;transition:transform .25s ease}
 .chat-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid #ece5d3}
 .chat-head b{font:800 18px var(--display)}
@@ -360,14 +418,22 @@ body.targeting .stack.elig .tc .card,body.targeting .stack.picked .tc .card{filt
 .chat-form input{flex:1;min-width:0;border:0;background:#f3eee1;border-radius:12px;padding:11px 12px;font:500 15px var(--body);color:var(--ink);outline:none}
 .chat-form input:focus{box-shadow:0 0 0 2px var(--gold)}
 .chat-form button{border:0;border-radius:12px;padding:0 16px;background:var(--red);color:#fff;font:800 15px var(--display)}
-.chat-peek{position:fixed;top:64px;right:14px;z-index:34;max-width:min(300px,80vw);padding:9px 13px;border-radius:14px 4px 14px 14px;background:var(--paper);color:var(--ink);box-shadow:var(--shadow);font-size:14px;line-height:1.35;cursor:pointer;opacity:0;transform:translateY(-6px);transition:.2s;pointer-events:none}
+.chat-peek{position:fixed;top:calc(var(--top-h,60px) + 8px);right:14px;z-index:44;max-width:min(300px,80vw);padding:9px 13px;border-radius:14px 4px 14px 14px;background:var(--paper);color:var(--ink);box-shadow:var(--shadow);font-size:14px;line-height:1.35;cursor:pointer;opacity:0;transform:translateY(-6px);transition:.2s;pointer-events:none}
 .chat-peek.show{opacity:1;transform:none;pointer-events:auto}
 .chat-peek b{display:block;font-size:12px;color:var(--muted)}
+/* Phones: the chat becomes a full-screen sheet above everything, sized to the visible area so the keyboard never hides it. */
 @media (max-width:600px){
   .chat-btn{padding:8px 11px}
-  .chat-panel{top:auto;left:0;right:0;bottom:0;width:auto;height:min(72vh,560px);border-radius:20px 20px 0 0;transform:translateY(105%)}
+  .chat-panel{top:var(--vv-top,0px);left:0;right:0;bottom:auto;width:auto;height:var(--vv-h,100dvh);border-radius:0;transform:translateY(105%);
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
   .chat-panel.open{transform:none}
   .chat-form{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+}
+/* Short landscape screens: a full-height panel on the right, so the table stays visible on the left. */
+@media (orientation:landscape) and (max-height:520px) and (min-width:601px){
+  .chat-panel{top:var(--vv-top,0px);bottom:auto;right:0;height:var(--vv-h,100dvh);width:min(380px,48vw);border-radius:18px 0 0 18px;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 0}
+  .chat-form{padding-bottom:max(10px,env(safe-area-inset-bottom))}
 }
 .tbtn,.brand b{white-space:nowrap}
 .card.wild .band:not(.placed) span{font-size:.74em;line-height:1.05;padding-left:18%}

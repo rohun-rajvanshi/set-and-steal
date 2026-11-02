@@ -4,23 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e3b2c">
-<title>Deal Table</title>
-<meta name="description" content="A friendly table for Monopoly Deal: play on one device or online with friends.">
+<title>Set &amp; Steal</title>
+<meta name="description" content="Set &amp; Steal: a quick card game for 2 to 5 players. Build three property sets, charge rent and steal from your friends, on one device or online.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Deal Table">
+<meta name="apple-mobile-web-app-title" content="Set &amp; Steal">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="table.css?v=32">
+<link rel="stylesheet" href="table.css?v=34">
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><span class="logo" aria-hidden="true">D</span><span><b>Deal Table</b><small id="modeLbl">LOCAL TABLE</small></span></div>
+  <div class="brand"><span class="logo" aria-hidden="true">S</span><span><b>Set &amp; Steal</b><small id="modeLbl">LOCAL TABLE</small></span></div>
   <nav class="top-actions">
     <button id="installBtn" class="tbtn install" hidden>📲 Install app</button>
     <button id="chatBtn" class="tbtn chat-btn" hidden aria-label="Room chat">💬 Chat<span id="chatBadge" class="chat-badge" hidden>0</span></button>
@@ -37,9 +37,9 @@
       <div class="hero-cards" aria-hidden="true">
         <span class="hc1"></span><span class="hc2"></span><span class="hc3"></span>
       </div>
-      <h1>Pull up a chair.<br><em>Make a deal.</em></h1>
-      <p>A friendly digital table for Monopoly Deal — official card mix, real Just Say No chains, and steals you aim by tapping the table.</p>
-      <ul class="facts"><li><b>2–5</b> players</li><li><b>3</b> plays a turn</li><li><b>3</b> full sets wins</li></ul>
+      <h1>Build three sets.<br><em>Steal the rest.</em></h1>
+      <p>A quick card game for friends. Collect property sets, charge rent, and swipe the cards you need with a tap on the table. Play on one device or online.</p>
+      <ul class="facts"><li><b>2 to 5</b> players</li><li><b>3</b> plays a turn</li><li><b>3</b> full sets wins</li></ul>
     </div>
 
     <div class="panel">
@@ -56,7 +56,7 @@
         </div>
         <div id="nameFields" class="names"></div>
         <button id="startBtn" class="cta">Deal the cards</button>
-        <p class="hint">Pass the device between turns — hands stay hidden behind a curtain.</p>
+        <p class="hint">Pass the device between turns. Hands stay hidden behind a curtain.</p>
       </div>
 
       <div id="tabOnline" class="tabbody" hidden>
@@ -85,11 +85,11 @@
 
     <div class="centre">
       <div class="piles">
-        <div class="pile deck" title="Draw pile"><div class="card back"><span>DEAL</span></div><b id="deckCount">0</b></div>
+        <div class="pile deck" title="Draw pile"><div class="card back"><span>S&amp;S</span></div><b id="deckCount">0</b></div>
         <div class="pile discard" title="Discard pile"><div id="discardTop"></div></div>
       </div>
       <div class="turnbox">
-        <div class="turn-who"><span class="dot"></span><div><b id="turnName">—</b><small id="turnSub"></small></div></div>
+        <div class="turn-who"><span class="dot"></span><div><b id="turnName"></b><small id="turnSub"></small></div></div>
         <div class="turn-meta"><span class="pips" id="pips"></span><small id="playsLbl"></small><span id="timer" class="timer" title="Turn timer (a reminder only)">4:00</span></div>
         <button id="endTurnBtn" class="end-btn">End turn</button>
       </div>
@@ -116,7 +116,7 @@
 <div id="modal" class="modal" hidden></div>
 <div id="flash" class="flash" aria-live="polite"></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="config.js?v=32"></script>
-<script src="app.js?v=32"></script>
+<script src="config.js?v=34"></script>
+<script src="app.js?v=34"></script>
 </body>
 </html>

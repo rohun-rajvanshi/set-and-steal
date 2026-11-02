@@ -1,25 +1,55 @@
 {
-  "id": "./",
-  "name": "Deal Table",
-  "short_name": "Deal Table",
-  "description": "A friendly table for Monopoly Deal: play on one device or online with friends, with Just Say No chains, tap-to-aim steals and room chat.",
-  "start_url": "./?source=app",
-  "scope": "./",
-  "display": "standalone",
-  "orientation": "any",
-  "background_color": "#0f3d2d",
-  "theme_color": "#0e3b2c",
-  "categories": ["games", "entertainment"],
-  "lang": "en",
-  "dir": "ltr",
-  "prefer_related_applications": false,
-  "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ],
-  "screenshots": [
-    { "src": "screenshot-phone.jpg", "sizes": "780x1600", "type": "image/jpeg", "form_factor": "narrow", "label": "The table on a phone" },
-    { "src": "screenshot-wide.jpg", "sizes": "1600x1011", "type": "image/jpeg", "form_factor": "wide", "label": "Aiming a Sly Deal at an opponent's property" }
-  ]
+ "id": "./",
+ "name": "Set & Steal",
+ "short_name": "Set & Steal",
+ "description": "A quick card game for 2 to 5 players: build three property sets, charge rent and steal from your friends, on one device or online.",
+ "start_url": "./?source=app",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "any",
+ "background_color": "#0f3d2d",
+ "theme_color": "#0e3b2c",
+ "categories": [
+  "games",
+  "entertainment"
+ ],
+ "lang": "en",
+ "dir": "ltr",
+ "prefer_related_applications": false,
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ],
+ "screenshots": [
+  {
+   "src": "screenshot-phone.jpg",
+   "sizes": "780x1600",
+   "type": "image/jpeg",
+   "form_factor": "narrow",
+   "label": "The table on a phone"
+  },
+  {
+   "src": "screenshot-wide.jpg",
+   "sizes": "1600x1000",
+   "type": "image/jpeg",
+   "form_factor": "wide",
+   "label": "Aiming a Steal at an opponent's property"
+  }
+ ]
 }

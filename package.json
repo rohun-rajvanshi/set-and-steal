@@ -1,19 +1,26 @@
 {
-  "name": "deal-table",
+  "name": "set-and-steal",
   "version": "1.0.0",
-  "description": "A digital table for Monopoly Deal: same-device and online rooms with chat.",
+  "description": "Set & Steal: a quick property card game for 2 to 5 players, on one device or online, with room chat.",
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
+    "test:worker": "TARGET=worker node --test --test-concurrency=1 tests/*.test.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.12",
     "pg": "^8.13.0"
   },
   "license": "UNLICENSED",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "wrangler": "^4.156.1"
+  }
 }

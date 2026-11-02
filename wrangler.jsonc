@@ -1,0 +1,20 @@
+// Cloudflare Workers configuration for Set & Steal.
+// Deploy: connect this GitHub repo in the Cloudflare dashboard (Workers & Pages, Import a repository),
+// or run `npx wrangler deploy`. Local preview: `npm run dev`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "set-and-steal",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-15",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "not_found_handling": "single-page-application"
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "Room" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }],
+  "observability": { "enabled": true }
+}

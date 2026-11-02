@@ -1,4 +1,4 @@
-// Deal Table — standalone server.
+// Set & Steal: standalone server.
 // Serves the static site in /public and the two JSON APIs (/api/rooms, /api/chat).
 // Runs the SQL files in /migrations once each on startup.
 import http from 'node:http';
@@ -109,4 +109,4 @@ try {
   console.error('Could not prepare the database:', e.message);
   console.error('Same-device games still work, but online rooms and chat need the database.');
 }
-server.listen(PORT, () => console.log('Deal Table running on http://localhost:' + PORT));
+server.listen(PORT, () => console.log('Set & Steal running on http://localhost:' + PORT));

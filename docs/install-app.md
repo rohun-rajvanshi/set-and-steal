@@ -1,12 +1,12 @@
-# Install Deal Table as an app
+# Install Set & Steal as an app
 
-Deal Table is a Progressive Web App (PWA). You can install it on a phone, tablet or computer straight from the website. It then opens full screen from its own icon, like any other app, and works offline for same-device games. Online rooms and chat still need an internet connection.
+Set & Steal is a Progressive Web App (PWA). You can install it on a phone, tablet or computer straight from the website. It then opens full screen from its own icon, like any other app, and works offline for same-device games. Online rooms and chat still need an internet connection.
 
 ## Android (Chrome, Edge, Samsung Internet)
 
 1. Open the game in Chrome.
 2. Tap **📲 Install app** in the top bar, or open the **⋮** menu and choose **Install app** (sometimes **Add to Home screen**).
-3. Confirm. Deal Table appears in your app drawer and on your home screen.
+3. Confirm. Set & Steal appears in your app drawer and on your home screen.
 
 ## iPhone and iPad (Safari)
 
@@ -34,7 +34,7 @@ A store listing isn't needed to install the app, but if you want one:
 1. Go to [pwabuilder.com](https://www.pwabuilder.com), enter the game's address and click **Start**.
 2. Choose **Package for stores → Android → Generate package**. You get a signed `.aab` (for Play) and an `.apk` you can install directly on an Android phone for testing.
 3. Keep the **signing key** file PWABuilder gives you. You need it for every future update.
-4. To hide the browser address bar inside the store app, upload the `assetlinks.json` file from the package to `/.well-known/assetlinks.json` on the site's domain. GitHub Pages project sites (`username.github.io/repo/`) can't serve that path, so use the Hatchable address or a custom domain for the store version.
+4. To hide the browser address bar inside the store app, save the `assetlinks.json` file from the package as `public/.well-known/assetlinks.json` in this repository and push. Cloudflare then serves it at `/.well-known/assetlinks.json` on the site's address.
 5. A Google Play developer account has a one-time registration fee. Check Google's current price.
 
 The Apple App Store needs a Mac, Xcode and a paid Apple Developer membership. iPhone users can install from Safari as above instead.

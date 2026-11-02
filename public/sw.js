@@ -1,8 +1,8 @@
-// Deal Table service worker: lets the app open offline (same-device games work without internet).
+// Set & Steal service worker: lets the app open offline (same-device games work without internet).
 // Online rooms and chat (/api/...) always go to the network and are never cached.
-const VERSION = "deal-table-v32";
+const VERSION = "set-and-steal-v34";
 const SHELL = [
-  "./", "index.html", "app.js?v=32", "table.css?v=32", "config.js?v=32", "manifest.webmanifest",
+  "./", "index.html", "app.js?v=34", "table.css?v=34", "config.js?v=34", "manifest.webmanifest",
   "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "favicon.png",
 ];
 
