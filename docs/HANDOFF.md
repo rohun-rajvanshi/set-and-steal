@@ -10,8 +10,10 @@ A browser card game for 2 to 5 players. Build 3 complete property sets to win; s
 
 | Place | Address | Notes |
 | --- | --- | --- |
-| Cloudflare Workers (live site) | https://set-and-steal.CLOUDFLARE_SUBDOMAIN.workers.dev | Free plan. Worker `set-and-steal`, configured entirely by `wrangler.jsonc`. Static files from `public/`; `/api/*` handled by `worker/index.js` with one Durable Object (`Room`) per room. Connected to the GitHub repo: every push to `main` deploys. |
+| Cloudflare Workers (live site) | https://set-and-steal.rohunrajvanshi.workers.dev | Free plan. Worker `set-and-steal`, configured entirely by `wrangler.jsonc`. Static files from `public/`; `/api/*` handled by `worker/index.js` with one Durable Object (`Room`) per room. Connected to the GitHub repo: every push to `main` deploys. |
 | GitHub | `rohun-rajvanshi/set-and-steal` | Source of truth. |
+
+Cloudflare account: the owner's (Workers & Pages → `set-and-steal`). Measured on the live site: a move reaches the other player's screen in about 0.1 seconds.
 
 Retired: the Azure App Service copy (`deal-table-rg`, stopped, free) and the Hatchable projects. See [Retired hosts](#retired-hosts).
 

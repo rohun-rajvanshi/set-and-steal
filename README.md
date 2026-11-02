@@ -2,7 +2,7 @@
 
 A quick card game for 2 to 5 players. Build three property sets, charge rent, and steal the cards you need with a tap on the table. Play on one device by passing it around, or online with friends in a private room.
 
-**▶ Play:** https://set-and-steal.CLOUDFLARE_SUBDOMAIN.workers.dev
+**▶ Play:** https://set-and-steal.rohunrajvanshi.workers.dev
 
 ![Aiming a Steal: the card you can take glows on the opponent's side](docs/images/steal.jpg)
 
