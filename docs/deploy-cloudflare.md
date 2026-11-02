@@ -14,7 +14,7 @@ It stays on Cloudflare's free plan, which needs no card. The free plan allows 10
 2. In the dashboard open **Compute → Workers & Pages → Create**, then **Connect GitHub** (it says **Continue with GitHub** once connected).
 3. In the GitHub window, install the Cloudflare app for your account, choosing the `set-and-steal` repository, and authorise it.
 4. Select the `set-and-steal` repository and click **Next**. Keep the detected settings: project name `set-and-steal`, build command empty, deploy command `npx wrangler deploy`. Click **Deploy**.
-5. After about a minute the site is live at `https://set-and-steal.<your-account>.workers.dev`. This repository's live copy is https://set-and-steal.rohunrajvanshi.workers.dev.
+5. After about a minute the site is live at `https://set-and-steal.<your-account>.workers.dev`. This repository's live copy is https://set-and-steal.setandstealfree.workers.dev.
 
 `wrangler.jsonc` in the repository holds the whole configuration: the static files folder, the `ROOMS` Durable Object binding and its SQLite storage migration. Nothing else needs to be set up in the dashboard.
 
