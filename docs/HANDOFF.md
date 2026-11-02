@@ -15,7 +15,7 @@ A browser card game for 2 to 5 players. Build 3 complete property sets to win; s
 
 Cloudflare account: the owner's (Workers & Pages → `set-and-steal`). Measured on the live site: a move reaches the other player's screen in about 0.1 seconds.
 
-Retired: the Azure App Service copy (`deal-table-rg`, stopped, free) and the Hatchable projects. See [Retired hosts](#retired-hosts).
+Retired: the Azure App Service copy (`deal-table-rg`, free) and the Hatchable projects. See [Retired hosts](#retired-hosts).
 
 Costs: none. The Cloudflare free plan needs no card. Static files are free and unlimited; the API has 100,000 requests a day, and live connections keep each game to a few hundred. Past a limit, online rooms error until 00:00 UTC; nothing is billed. The site never sleeps.
 
@@ -76,7 +76,7 @@ The owner holds the GitHub and Cloudflare accounts. No passwords or keys are sto
 
 ## Retired hosts
 
-- **Azure** (Azure for Students subscription): web app `deal-table` in resource group `deal-table-rg` on the free F1 plan, stopped. Delete the resource group in the Azure portal to remove it completely.
+- **Azure** (the Azure for Students subscription it was created on): web app `deal-table` in resource group `deal-table-rg` on the free F1 plan. It costs nothing but still serves the old version. To retire it, sign in to that subscription, open the app in the portal and click **Stop**, or delete the resource group `deal-table-rg` to remove it completely.
 - **Hatchable**: the original project from before the rebrand, and "Set & Steal" (never deployed). Delete them in the Hatchable console if they're no longer wanted.
 
 ## Selling or transferring
